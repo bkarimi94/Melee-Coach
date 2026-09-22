@@ -1,0 +1,5 @@
+peppi-py
+pandas
+numpy
+streamlit
+pytest
