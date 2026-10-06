@@ -61,3 +61,50 @@ General analysis will be available for replay files, while more detailed charact
 ## Current Status
 
 The project is currently in the early development and setup stage as part of a semester-long Software Engineering course project for CPSC 362.
+
+## Current Progress
+
+Melee Coach currently supports:
+
+- Uploading Slippi `.slp` replay files
+- Parsing replay data with peppi-py
+- Identifying players, characters, stage, stocks, and timer
+- Displaying a match summary through Streamlit
+- Loading frame-by-frame gameplay data
+- Handling duplicate rollback frames by using the final recorded frame version
+- Detecting gameplay openings/conversions
+- Calculating Openings Per Kill (OPK)
+- Displaying OPK statistics in the Streamlit interface
+- Running automated tests with pytest
+
+## Openings Per Kill
+
+Openings Per Kill (OPK) is the first gameplay-analysis
+metric implemented in Melee Coach.
+
+The statistic is calculated as:
+
+`OPK = Openings / Kills`
+
+A lower OPK means that fewer offensive openings were required,
+on average, to take a stock.
+
+The OPK implementation was validated against statistics generated
+by the Slippi JavaScript SDK using the same replay file.
+
+For the validation replay:
+
+- Falco: 9 openings, 2 kills, OPK = 4.50
+- Fox: 11 openings, 4 kills, OPK = 2.75
+
+The Melee Coach results matched the Slippi reference statistics.
+
+## Next Development Goals
+
+Planned next steps include:
+
+- Validate OPK using additional replay files
+- Add additional gameplay statistics
+- Develop initial coaching-feedback rules
+- Add character-specific analysis
+- Support analysis across multiple replay files
