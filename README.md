@@ -108,3 +108,62 @@ Planned next steps include:
 - Develop initial coaching-feedback rules
 - Add character-specific analysis
 - Support analysis across multiple replay files
+
+## Current Progress - October 19, 2026
+
+Melee Coach currently supports:
+
+- Uploading Slippi `.slp` replay files through Streamlit
+- Parsing replay data with peppi-py
+- Displaying players, characters, stage, stocks, and timer
+- Loading frame-by-frame gameplay information
+- Filtering rollback frame revisions
+- Detecting gameplay openings and conversions
+- Calculating Openings Per Kill (OPK)
+- Classifying openings as neutral wins, counter-attacks, or trades
+- Calculating Neutral Win Rate
+- Displaying gameplay statistics through Streamlit
+- Generating initial descriptive gameplay feedback
+- Running automated tests with pytest
+
+## Current Gameplay Metrics
+
+### Openings Per Kill
+
+Openings Per Kill measures the average number of offensive
+openings required to take a stock.
+
+`OPK = Openings / Kills`
+
+### Neutral Wins
+
+A neutral win represents an opening that begins from neutral,
+rather than as a counter-attack or simultaneous trade.
+
+Melee Coach classifies detected openings as:
+
+- Neutral Win
+- Counter-Attack
+- Trade
+
+Neutral Win Rate is calculated as:
+
+`Player Neutral Wins / Total Neutral Wins`
+
+The statistics are validated against results produced by the
+Slippi statistics implementation using the same replay files.
+
+## Current Architecture
+
+The application currently follows this general pipeline:
+
+`.slp replay -> replay parser -> gameplay statistics -> analysis notes -> Streamlit interface`
+
+## Next Development Goals
+
+- Continue validating statistics across additional replay files
+- Add more gameplay statistics
+- Develop more useful coaching-feedback rules
+- Begin Falco-specific analysis
+- Add multi-replay analysis
+- Improve the Streamlit user interface
