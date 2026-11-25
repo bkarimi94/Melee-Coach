@@ -1,277 +1,77 @@
-from src.analysis.openings import (
-    detect_openings,
-    get_countable_openings,
-)
+"""Classify detected offensive openings in two-player Melee matches."""
+
+from src.analysis.openings import detect_openings, get_countable_openings
 
 
-def calculate_neutral_win_ratio(
-    neutral_wins,
-    opponent_neutral_wins
-):
-    """
-    Calculate the player's share of
-    all neutral wins in the game.
-
-    Example:
-
-    Player:
-        6 neutral wins
-
-    Opponent:
-        2 neutral wins
-
-    Neutral Win Ratio:
-        6 / (6 + 2)
-        = 0.75
-        = 75%
-    """
-
-    total_neutral_wins = (
-        neutral_wins
-        + opponent_neutral_wins
-    )
-
-    if total_neutral_wins == 0:
-        return None
-
-    return (
-        neutral_wins
-        / total_neutral_wins
-    )
+def calculate_neutral_win_ratio(neutral_wins, opponent_neutral_wins):
+    """Return the fraction of all neutral wins earned by this player."""
+    total = neutral_wins + opponent_neutral_wins
+    return None if total == 0 else neutral_wins / total
 
 
 def get_openings_by_player(game):
-    """
-    Detect the countable openings
-    belonging to both players.
-
-    Neutral-win analysis currently
-    supports two-player singles matches.
-    """
-
+    """Return damage-producing openings for both singles players."""
     if len(game.start.players) != 2:
-        raise ValueError(
-            "Neutral-win analysis currently "
-            "supports two-player singles "
-            "matches only."
-        )
+        raise ValueError("Neutral analysis supports two-player singles matches only.")
+    return {
+        index: get_countable_openings(detect_openings(game, index))
+        for index in (0, 1)
+    }
 
-    openings_by_player = {}
+
+def classify_openings_by_player(openings_by_player):
+    """Group openings into neutral wins, counter-attacks, and trades.
+
+    A simultaneous opening is a trade. Otherwise, an opening that begins
+    while the attacking player is already being punished is a counter-attack.
+    Remaining openings are neutral wins. This is an approximation of the
+    Slippi conversion-classification rules, not an exact SDK port.
+    """
+    results = {
+        index: {"neutral_wins": 0, "counter_attacks": 0, "trades": 0}
+        for index in (0, 1)
+    }
 
     for player_index in (0, 1):
-        detected_openings = (
-            detect_openings(
-                game,
-                player_index
+        for opening in openings_by_player.get(player_index, []):
+            opponent_openings = openings_by_player.get(1 - player_index, [])
+            start = opening.start_frame
+
+            is_trade = any(
+                other.start_frame == start for other in opponent_openings
             )
-        )
-
-        countable_openings = (
-            get_countable_openings(
-                detected_openings
+            was_being_punished = any(
+                other.start_frame < start
+                and (other.end_frame is None or start < other.end_frame)
+                for other in opponent_openings
             )
-        )
-
-        openings_by_player[
-            player_index
-        ] = countable_openings
-
-    return openings_by_player
-
-
-def classify_openings_by_player(
-    openings_by_player
-):
-    """
-    Classify openings as:
-
-    - neutral wins
-    - counter-attacks
-    - trades
-
-    This follows the general conversion
-    classification used by Slippi.
-    """
-
-    results = {}
-
-    for player_index in (
-        openings_by_player
-    ):
-        results[player_index] = {
-            "neutral_wins": 0,
-            "counter_attacks": 0,
-            "trades": 0,
-        }
-
-    all_openings = []
-
-    for player_index, openings in (
-        openings_by_player.items()
-    ):
-        for opening in openings:
-            all_openings.append(
-                opening
-            )
-
-    openings_by_start_frame = {}
-
-    for opening in all_openings:
-        start_frame = (
-            opening.start_frame
-        )
-
-        if (
-            start_frame
-            not in openings_by_start_frame
-        ):
-            openings_by_start_frame[
-                start_frame
-            ] = []
-
-        openings_by_start_frame[
-            start_frame
-        ].append(
-            opening
-        )
-
-    last_end_frame_by_defender = {}
-
-    for start_frame in sorted(
-        openings_by_start_frame
-    ):
-        openings = (
-            openings_by_start_frame[
-                start_frame
-            ]
-        )
-
-        is_trade = (
-            len(openings) >= 2
-        )
-
-        for opening in openings:
-            if opening.end_frame is not None:
-                last_end_frame_by_defender[
-                    opening.defender_index
-                ] = opening.end_frame
 
             if is_trade:
-                results[
-                    opening.attacker_index
-                ]["trades"] += 1
-
-                continue
-
-            previous_opponent_end_frame = (
-                last_end_frame_by_defender.get(
-                    opening.attacker_index
-                )
-            )
-
-            is_counter_attack = (
-                previous_opponent_end_frame
-                is not None
-                and
-                previous_opponent_end_frame
-                > opening.start_frame
-            )
-
-            if is_counter_attack:
-                results[
-                    opening.attacker_index
-                ][
-                    "counter_attacks"
-                ] += 1
-
+                results[player_index]["trades"] += 1
+            elif was_being_punished:
+                results[player_index]["counter_attacks"] += 1
             else:
-                results[
-                    opening.attacker_index
-                ][
-                    "neutral_wins"
-                ] += 1
+                results[player_index]["neutral_wins"] += 1
 
     return results
 
 
-def analyze_neutral(
-    game,
-    player_index
-):
-    """
-    Analyze neutral interactions for
-    one player in a two-player match.
-    """
-
+def analyze_neutral(game, player_index):
+    """Calculate neutral statistics for player index 0 or 1."""
     if player_index not in (0, 1):
-        raise ValueError(
-            "player_index must be 0 or 1."
-        )
+        raise ValueError("player_index must be 0 or 1.")
 
-    openings_by_player = (
-        get_openings_by_player(
-            game
-        )
-    )
-
-    classifications = (
-        classify_openings_by_player(
-            openings_by_player
-        )
-    )
-
-    opponent_index = (
-        1 - player_index
-    )
-
-    neutral_wins = (
-        classifications[
-            player_index
-        ]["neutral_wins"]
-    )
-
-    opponent_neutral_wins = (
-        classifications[
-            opponent_index
-        ]["neutral_wins"]
-    )
-
-    total_neutral_wins = (
-        neutral_wins
-        + opponent_neutral_wins
-    )
-
-    neutral_win_ratio = (
-        calculate_neutral_win_ratio(
-            neutral_wins,
-            opponent_neutral_wins
-        )
-    )
+    classified = classify_openings_by_player(get_openings_by_player(game))
+    own = classified[player_index]
+    opponent = classified[1 - player_index]
+    wins = own["neutral_wins"]
+    losses = opponent["neutral_wins"]
 
     return {
-        "neutral_wins":
-            neutral_wins,
-
-        "neutral_losses":
-            opponent_neutral_wins,
-
-        "neutral_opportunities":
-            total_neutral_wins,
-
-        "neutral_win_ratio":
-            neutral_win_ratio,
-
-        "counter_attacks":
-            classifications[
-                player_index
-            ][
-                "counter_attacks"
-            ],
-
-        "trades":
-            classifications[
-                player_index
-            ][
-                "trades"
-            ],
+        "neutral_wins": wins,
+        "neutral_losses": losses,
+        "neutral_opportunities": wins + losses,
+        "neutral_win_ratio": calculate_neutral_win_ratio(wins, losses),
+        "counter_attacks": own["counter_attacks"],
+        "trades": own["trades"],
     }

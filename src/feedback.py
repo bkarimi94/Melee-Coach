@@ -1,81 +1,65 @@
+"""Generate simple, evidence-based observations about one match."""
+
+
 def build_player_feedback(
     player_name,
     opk_results,
-    neutral_results
+    neutral_results,
+    damage_results=None,
+    character=None,
+    opponent_opk_results=None,
 ):
-    """
-    Build simple descriptive feedback
-    from the gameplay statistics
-    currently supported by Melee Coach.
-
-    More advanced coaching rules can
-    be added later after enough data
-    has been collected to justify
-    meaningful thresholds.
-    """
-
+    """Return descriptive notes and a few clearly limited practice ideas."""
     feedback = []
 
-    opk = (
-        opk_results[
-            "opk"
-        ]
-    )
-
+    opk = opk_results["opk"]
     if opk is None:
         feedback.append(
-            f"{player_name} did not "
-            f"record a kill, so "
-            f"Openings Per Kill cannot "
-            f"be calculated."
+            f"{player_name} did not record a kill, so OPK cannot be calculated."
         )
-
     else:
         feedback.append(
-            f"{player_name} required "
-            f"an average of "
-            f"{opk:.2f} openings "
-            f"for each kill."
+            f"{player_name} needed an average of {opk:.2f} openings per kill."
         )
 
-    neutral_wins = (
-        neutral_results[
-            "neutral_wins"
-        ]
-    )
-
-    neutral_opportunities = (
-        neutral_results[
-            "neutral_opportunities"
-        ]
-    )
-
-    neutral_win_ratio = (
-        neutral_results[
-            "neutral_win_ratio"
-        ]
-    )
-
-    if neutral_win_ratio is None:
-        feedback.append(
-            f"No neutral wins were "
-            f"recorded for either player, "
-            f"so a neutral win rate "
-            f"cannot be calculated."
-        )
-
+    wins = neutral_results["neutral_wins"]
+    total = neutral_results["neutral_opportunities"]
+    ratio = neutral_results["neutral_win_ratio"]
+    if ratio is None:
+        feedback.append("Neutral Win Rate cannot be calculated for this match.")
     else:
-        neutral_percentage = (
-            neutral_win_ratio
-            * 100
+        feedback.append(
+            f"{player_name} won {wins} of {total} classified neutral wins "
+            f"({100 * ratio:.1f}%)."
         )
 
+    if damage_results is not None:
+        average = damage_results["average_damage"]
+        if average is None:
+            feedback.append("No average opening damage is available for this match.")
+        else:
+            feedback.append(
+                f"Estimated damage per opening was {average:.1f} percentage points."
+            )
+
+    if ratio is not None and total > 0 and ratio < 0.5:
         feedback.append(
-            f"{player_name} won "
-            f"{neutral_wins} of "
-            f"{neutral_opportunities} "
-            f"neutral interactions "
-            f"({neutral_percentage:.2f}%)."
+            "Review the moments immediately before you lost neutral; look for "
+            "repeated approaches or defensive habits."
+        )
+
+    if opponent_opk_results is not None:
+        their_opk = opponent_opk_results["opk"]
+        if opk is not None and their_opk is not None and opk > their_opk:
+            feedback.append(
+                "You needed more openings per kill than your opponent in this "
+                "match. Review missed follow-ups and edgeguard situations."
+            )
+
+    if character and character.lower() == "falco" and ratio is not None and ratio < 0.5:
+        feedback.append(
+            "Falco review idea: check whether laser spacing and your next "
+            "decision helped you safely start interactions."
         )
 
     return feedback
