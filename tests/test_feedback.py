@@ -1,105 +1,46 @@
-from src.feedback import (
-    build_player_feedback,
-)
+"""Tests for descriptive coaching feedback."""
+
+from src.feedback import build_player_feedback
 
 
-def test_feedback_with_opk_and_neutral():
-    opk_results = {
-        "openings": 9,
-        "kills": 2,
-        "opk": 4.5,
-    }
-
-    neutral_results = {
-        "neutral_wins": 2,
-        "neutral_losses": 6,
-        "neutral_opportunities": 8,
-        "neutral_win_ratio": 0.25,
-        "counter_attacks": 6,
-        "trades": 1,
-    }
-
-    feedback = (
-        build_player_feedback(
-            "Buu",
-            opk_results,
-            neutral_results
-        )
-    )
-
-    assert len(feedback) == 2
-
-    assert (
-        "4.50 openings"
-        in feedback[0]
-    )
-
-    assert (
-        "2 of 8 neutral interactions"
-        in feedback[1]
-    )
-
-    assert (
-        "25.00%"
-        in feedback[1]
-    )
+def example_opk(value=4.5):
+    return {"openings": 9, "kills": 2, "opk": value}
 
 
-def test_feedback_with_no_kills():
-    opk_results = {
-        "openings": 5,
-        "kills": 0,
-        "opk": None,
-    }
-
-    neutral_results = {
-        "neutral_wins": 3,
-        "neutral_losses": 2,
-        "neutral_opportunities": 5,
-        "neutral_win_ratio": 0.6,
-        "counter_attacks": 0,
+def example_neutral(wins=2, losses=6):
+    total = wins + losses
+    return {
+        "neutral_wins": wins,
+        "neutral_losses": losses,
+        "neutral_opportunities": total,
+        "neutral_win_ratio": wins / total if total else None,
+        "counter_attacks": 1,
         "trades": 0,
     }
 
-    feedback = (
-        build_player_feedback(
-            "Player",
-            opk_results,
-            neutral_results
-        )
+
+def test_basic_feedback():
+    messages = build_player_feedback("Buu", example_opk(), example_neutral())
+    assert "4.50 openings" in messages[0]
+    assert "2 of 8 classified neutral wins" in messages[1]
+    assert any("Review the moments" in note for note in messages)
+
+
+def test_no_kill_or_neutral_win():
+    messages = build_player_feedback(
+        "Player", example_opk(None), example_neutral(0, 0)
     )
+    assert "cannot be calculated" in messages[0]
+    assert "cannot be calculated" in messages[1]
 
-    assert (
-        "cannot be calculated"
-        in feedback[0]
+
+def test_falco_feedback_uses_comparison():
+    messages = build_player_feedback(
+        "Buu", example_opk(4.5), example_neutral(2, 6),
+        damage_results={"average_damage": 26.0},
+        character="Falco",
+        opponent_opk_results=example_opk(2.75),
     )
-
-
-def test_feedback_with_no_neutral_wins():
-    opk_results = {
-        "openings": 4,
-        "kills": 2,
-        "opk": 2.0,
-    }
-
-    neutral_results = {
-        "neutral_wins": 0,
-        "neutral_losses": 0,
-        "neutral_opportunities": 0,
-        "neutral_win_ratio": None,
-        "counter_attacks": 0,
-        "trades": 0,
-    }
-
-    feedback = (
-        build_player_feedback(
-            "Player",
-            opk_results,
-            neutral_results
-        )
-    )
-
-    assert (
-        "cannot be calculated"
-        in feedback[1]
-    )
+    assert any("laser spacing" in note for note in messages)
+    assert any("more openings per kill" in note for note in messages)
+    assert any("26.0 percentage points" in note for note in messages)

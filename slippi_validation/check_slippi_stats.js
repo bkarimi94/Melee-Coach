@@ -1,145 +1,38 @@
+// Print Slippi's reference statistics for a single replay.
 const path = require("path");
-
-const {
-    SlippiGame
-} = require("@slippi/slippi-js/node");
-
+const { SlippiGame } = require("@slippi/slippi-js/node");
 
 if (process.argv.length !== 3) {
-    console.log(
-        "Usage:"
-    );
-
-    console.log(
-        "node check_slippi_stats.js " +
-        "path/to/replay.slp"
-    );
-
+    console.log("Usage: node check_slippi_stats.js path/to/replay.slp");
     process.exit(1);
 }
 
-
-const replayPath = path.resolve(
-    process.argv[2]
-);
-
-
-const game = new SlippiGame(
-    replayPath
-);
-
-
-const settings = game.getSettings();
+const replayPath = path.resolve(process.argv[2]);
+const game = new SlippiGame(replayPath);
 const stats = game.getStats();
 
+console.log("=== PLAYER SETTINGS ===");
+console.log(JSON.stringify(game.getSettings(), null, 2));
 
-console.log(
-    "=== PLAYER SETTINGS ==="
-);
+console.log("=== OVERALL STATISTICS ===");
+for (const player of stats.overall || []) {
+    console.log(JSON.stringify({
+        playerIndex: player.playerIndex,
+        conversionCount: player.conversionCount,
+        killCount: player.killCount,
+        openingsPerKill: player.openingsPerKill,
+        neutralWinRatio: player.neutralWinRatio,
+        counterHitRatio: player.counterHitRatio,
+    }, null, 2));
+}
 
-console.log(
-    JSON.stringify(
-        settings,
-        null,
-        2
-    )
-);
-
-
-console.log();
-
-
-console.log(
-    "=== OPENING TYPES ==="
-);
-
-
-const openingTypes = (
-    stats.conversions.map(
-        conversion => {
-            const firstMove = (
-                conversion.moves.length > 0
-                    ? conversion.moves[0]
-                    : null
-            );
-
-            return {
-                defenderIndex:
-                    conversion.playerIndex,
-
-                attackerIndex:
-                    firstMove
-                        ? firstMove.playerIndex
-                        : null,
-
-                startFrame:
-                    conversion.startFrame,
-
-                endFrame:
-                    conversion.endFrame,
-
-                openingType:
-                    conversion.openingType,
-
-                didKill:
-                    conversion.didKill
-            };
-        }
-    )
-);
-
-
-console.log(
-    JSON.stringify(
-        openingTypes,
-        null,
-        2
-    )
-);
-
-
-console.log();
-
-
-console.log(
-    "=== OVERALL STATS ==="
-);
-
-
-const overallStats = (
-    stats.overall.map(
-        player => {
-            return {
-                playerIndex:
-                    player.playerIndex,
-
-                conversionCount:
-                    player.conversionCount,
-
-                killCount:
-                    player.killCount,
-
-                openingsPerKill:
-                    player.openingsPerKill,
-
-                neutralWinRatio:
-                    player.neutralWinRatio,
-
-                counterHitRatio:
-                    player.counterHitRatio,
-
-                beneficialTradeRatio:
-                    player.beneficialTradeRatio
-            };
-        }
-    )
-);
-
-
-console.log(
-    JSON.stringify(
-        overallStats,
-        null,
-        2
-    )
-);
+console.log("=== CONVERSION TYPES ===");
+for (const conversion of stats.conversions || []) {
+    console.log(JSON.stringify({
+        defenderIndex: conversion.playerIndex,
+        startFrame: conversion.startFrame,
+        endFrame: conversion.endFrame,
+        openingType: conversion.openingType,
+        didKill: conversion.didKill,
+    }));
+}

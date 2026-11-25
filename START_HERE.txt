@@ -1,0 +1,37 @@
+MELEE COACH - NOVEMBER 24, 2026 UPDATE
+
+These files are an UPDATE for an existing Melee Coach repository.
+They are NOT a complete standalone application.
+
+Keep your original repository files such as:
+  src/analysis/openings.py
+  src/replay_parser.py
+  src/match_summary.py
+  src/melee_data.py
+  requirements.txt
+
+In your existing project root, follow the instructions provided in chat.
+Copy the files in this folder to their matching relative locations.
+New files:
+  src/analysis/opening_damage.py
+  src/batch_analysis.py
+  tests/test_opening_damage.py
+  tests/test_batch_analysis.py
+  tests/test_replay_regression.py
+Files replaced:
+  src/analysis/neutral.py
+  src/feedback.py
+  tests/test_neutral.py
+  tests/test_feedback.py
+  app.py
+  inspect_metrics.py
+
+The new code was syntax-checked and unit-tested with stubs for existing
+project functions (12 passed, 2 reference-replay tests skipped because the
+real .slp replay is not included). You MUST run all tests and replay
+validation against your actual repository and Slippi files.
+
+No .slp files or user data are contained in this bundle.
+Additional JavaScript reference checker:
+  slippi_validation/check_slippi_stats.js
+Requires @slippi/slippi-js installed in slippi_validation.
